@@ -6,17 +6,49 @@ from web3 import Web3
 app = Celery("tasks", broker="redis://localhost:6379/0")
 
 # Connect to local blockchain (Ganache)
-w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
 
 # Contract details (replace with actual address and ABI)
-contract_address = "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24"  # Replace with TaskLogger's deployed address
+contract_address = "0xc47805536eF6fEFA91D644Cb406ecd72b36937ff"  # Replace with TaskLogger's deployed address
 contract_abi = [
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "taskId",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "string",
+                "name": "inputHash",
+                "type": "string",
+            },
+            {
+                "indexed": False,
+                "internalType": "string",
+                "name": "outputHash",
+                "type": "string",
+            },
+            {
+                "indexed": False,
+                "internalType": "string",
+                "name": "status",
+                "type": "string",
+            },
+        ],
+        "name": "TaskLogged",
+        "type": "event",
+    },
     {
         "inputs": [],
         "name": "taskCount",
         "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function",
+        "constant": True,
     },
     {
         "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
@@ -28,6 +60,7 @@ contract_abi = [
         ],
         "stateMutability": "view",
         "type": "function",
+        "constant": True,
     },
     {
         "inputs": [
@@ -47,7 +80,7 @@ contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 # Ensure the default account is set
 w3.eth.defaultAccount = w3.eth.accounts[0]  # Replace with the correct account
 
-private_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"  # Replace with the private key of the default account
+private_key = "0xff62a7210f7b218a8fc17f639f3e2fa8be7636580abe10d3492ce0eed9713efe"  # Replace with the private key of the default account
 
 print(f"Contract address: {contract.address}")
 print(f"Contract functions: {contract.all_functions()}")
@@ -93,11 +126,11 @@ def process_file(ipfs_hash):
     try:
         # Step 1: Fetch file from IPFS
         file_data = ipfs_cat(ipfs_hash)
-        print(f"Fetched file data: {file_data}")
+        # print(f"Fetched file data: {file_data}")
 
         # Step 2: Process data (e.g., convert to uppercase)
         processed_content = file_data.upper()
-        print(f"Processed content: {processed_content}")
+        # print(f"Processed content: {processed_content}")
 
         # Step 3: Upload processed content back to IPFS
         result_hash = ipfs_add(processed_content)
@@ -119,7 +152,6 @@ def process_file(ipfs_hash):
         signed_txn = w3.eth.account.sign_transaction(
             transaction, private_key=private_key
         )
-        print(f"Signed transaction: {signed_txn}")
 
         tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
 
